@@ -13,6 +13,7 @@ public class PolyArr {
 
 		for (int i = 0; i < persons.length; i++) {
 			System.out.println(persons[i].showInfo());
+			// instanceof 比较的是运行类型，也就是右半边的类型
 			if (persons[i] instanceof Student) {
 				System.out.println(((Student) persons[i]).study());
 			} else if (persons[i] instanceof Teacher) {

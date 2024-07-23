@@ -8,6 +8,7 @@ import java.awt.Panel;
 import java.awt.Toolkit;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.io.File;
 import java.util.Vector;
 
 import javax.swing.JPanel;
@@ -22,23 +23,51 @@ public class MyPanel extends JPanel implements KeyListener, Runnable {
 	Image image1 = null;
 	Image image2 = null;
 	Image image3 = null;
+	Vector<Node> nodes = new Vector<>();
 
-	public MyPanel() {
+	public MyPanel(String type) {
 
 		Recorder.setEnemyTanks(enemyTanks);
 
 		hero = new Hero(600, 600);
 		hero.setSpeed(4);
 
-		for (int i = 0; i < EnemyTank.enemyTankNums; i++) {
-			EnemyTank enemyTank = new EnemyTank((100 * (i + 1)), 0);
-			enemyTank.setEnemyTanks(enemyTanks);
-			enemyTank.setDirect(2);
-			new Thread(enemyTank).start();
-			Shot shot = new Shot(enemyTank.getX() + 20, enemyTank.getY() + 60, enemyTank.getDirect());
-			enemyTank.shots.add(shot);
-			new Thread(shot).start();
-			enemyTanks.add(enemyTank);
+		File file = new File(Recorder.getRecordFile());
+		if (!file.exists()) {
+			type = "1";
+			System.out.println("文件不存在，只能重新开始游戏");
+		} else {
+			nodes = Recorder.getNodesAndTanks();
+		}
+
+		switch (type) {
+		case "1":
+			for (int i = 0; i < EnemyTank.enemyTankNums; i++) {
+				EnemyTank enemyTank = new EnemyTank((100 * (i + 1)), 0);
+				enemyTank.setEnemyTanks(enemyTanks);
+				enemyTank.setDirect(2);
+				new Thread(enemyTank).start();
+				Shot shot = new Shot(enemyTank.getX() + 20, enemyTank.getY() + 60, enemyTank.getDirect());
+				enemyTank.shots.add(shot);
+				new Thread(shot).start();
+				enemyTanks.add(enemyTank);
+			}
+			break;
+		case "2":
+			for (int i = 0; i < nodes.size(); i++) {
+				Node node = nodes.get(i);
+				EnemyTank enemyTank = new EnemyTank(node.getX(), node.getY());
+				enemyTank.setEnemyTanks(enemyTanks);
+				enemyTank.setDirect(node.getDirect());
+				new Thread(enemyTank).start();
+				Shot shot = new Shot(enemyTank.getX() + 20, enemyTank.getY() + 60, enemyTank.getDirect());
+				enemyTank.shots.add(shot);
+				new Thread(shot).start();
+				enemyTanks.add(enemyTank);
+			}
+			break;
+		default:
+			System.out.println("输入有误");
 		}
 
 		// 初始化图片

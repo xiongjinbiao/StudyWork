@@ -6,6 +6,8 @@ public class Tank {
 	private int y;
 	private int direct;
 	private int speed = 1;
+    private boolean isLive = true;
+
 
 	public void moveUp() {
 		y -= speed;
@@ -59,6 +61,14 @@ public class Tank {
 
 	public void setSpeed(int speed) {
 		this.speed = speed;
+	}
+
+	public boolean isLive() {
+		return isLive;
+	}
+
+	public void setLive(boolean isLive) {
+		this.isLive = isLive;
 	}
 
 }

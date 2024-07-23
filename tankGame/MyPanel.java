@@ -1,6 +1,7 @@
 package demo07.tankGame;
 
 import java.awt.Color;
+import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Image;
 import java.awt.Panel;
@@ -24,11 +25,14 @@ public class MyPanel extends JPanel implements KeyListener, Runnable {
 
 	public MyPanel() {
 
+		Recorder.setEnemyTanks(enemyTanks);
+
 		hero = new Hero(600, 600);
 		hero.setSpeed(4);
 
 		for (int i = 0; i < EnemyTank.enemyTankNums; i++) {
 			EnemyTank enemyTank = new EnemyTank((100 * (i + 1)), 0);
+			enemyTank.setEnemyTanks(enemyTanks);
 			enemyTank.setDirect(2);
 			new Thread(enemyTank).start();
 			Shot shot = new Shot(enemyTank.getX() + 20, enemyTank.getY() + 60, enemyTank.getDirect());
@@ -38,25 +42,34 @@ public class MyPanel extends JPanel implements KeyListener, Runnable {
 		}
 
 		// 初始化图片
-//		image1 = Toolkit.getDefaultToolkit().getImage(Panel.class.getResource("./bomb_1.gif"));
-//		image2 = Toolkit.getDefaultToolkit().getImage(Panel.class.getResource("/Users/user/eclipse-workspace/JavaStudy/bomb_2.gif"));
-//		image3 = Toolkit.getDefaultToolkit().getImage(Panel.class.getResource("/Users/user/eclipse-workspace/JavaStudy/bomb_3.gif"));
-		//获取项目路径
-        //1.获取图片资源
-        String parent = System.getProperty("user.dir");
-        parent += "\\";
-        //2.初始化图片
-        image1 = Toolkit.getDefaultToolkit().getImage(parent + "bomb_1.gif");
-        image2 = Toolkit.getDefaultToolkit().getImage(parent + "bomb_2.gif");
-        image3 = Toolkit.getDefaultToolkit().getImage(parent + "bomb_3.gif");
-                         
+//		try {
+//			image1 = Toolkit.getDefaultToolkit().getImage(Panel.class.getResource("src/bomb_1.gif"));
+//			image2 = Toolkit.getDefaultToolkit().getImage(Panel.class.getResource("src/bomb_2.gif"));
+//			image3 = Toolkit.getDefaultToolkit().getImage(Panel.class.getResource("src/bomb_3.gif"));
+//		} catch (NullPointerException e) {
+//			e.printStackTrace();
+//		}
+
+	}
+
+	public void showInfo(Graphics g) {
+
+		g.setColor(Color.BLACK);
+		Font font = new Font("宋体", Font.BOLD, 25);
+		g.setFont(font);
+
+		g.drawString("你累积击毁敌方坦克", 1020, 30);
+		drawTank(1020, 60, g, 0, 0);
+		g.setColor(Color.BLACK);
+		g.drawString(Recorder.getAllEnemyTankNum() + "", 1080, 100);
+
 	}
 
 	@Override
 	public void paint(Graphics g) {
 		super.paint(g);
 		g.fillRect(0, 0, 1000, 750);
-
+		showInfo(g);
 		// 画出自己的坦克
 		drawTank(hero.getX(), hero.getY(), g, hero.getDirect(), 0);
 
@@ -70,6 +83,27 @@ public class MyPanel extends JPanel implements KeyListener, Runnable {
 			}
 		}
 
+		// 敌方坦克
+		for (int i = 0; i < enemyTanks.size(); i++) {
+			// 取出敌方坦克
+			EnemyTank enemyTank = enemyTanks.get(i);
+
+			if (enemyTank.isLive()) {
+				drawTank(enemyTank.getX(), enemyTank.getY(), g, enemyTank.getDirect(), 1);
+				// 取出子弹
+				for (int j = 0; j < enemyTank.shots.size(); j++) {
+					Shot shot = enemyTank.shots.get(j);
+					if (shot.isLive) {
+						g.draw3DRect(shot.x, shot.y, 2, 2, false);
+					} else {
+						enemyTank.shots.remove(shot);
+					}
+				}
+			}
+
+		}
+
+		// 如果bombs 集合中有对象，就画出
 		for (int i = 0; i < bombs.size(); i++) {
 			Bomb bomb = bombs.get(i);
 			if (bomb.life > 6) {
@@ -85,26 +119,6 @@ public class MyPanel extends JPanel implements KeyListener, Runnable {
 			}
 		}
 
-		// 敌方坦克
-		for (int i = 0; i < enemyTanks.size(); i++) {
-			// 取出敌方坦克
-			EnemyTank enemyTank = enemyTanks.get(i);
-
-			if (enemyTank.isLive) {
-				drawTank(enemyTank.getX(), enemyTank.getY(), g, enemyTank.getDirect(), 1);
-				// 取出子弹
-				for (int j = 0; j < enemyTank.shots.size(); j++) {
-					Shot shot = enemyTank.shots.get(j);
-					if (shot.isLive) {
-						g.draw3DRect(shot.x, shot.y, 2, 2, false);
-					} else {
-						enemyTank.shots.remove(shot);
-					}
-				}
-			}
-
-		}
-
 	}
 
 	/**
@@ -112,7 +126,7 @@ public class MyPanel extends JPanel implements KeyListener, Runnable {
 	 * @param x      横坐标
 	 * @param y      纵坐标
 	 * @param g      Graphics
-	 * @param direct 坦克朝向 0-up,1-right,2-down,3-down
+	 * @param direct 坦克朝向 0-up,1-right,2-down,3-left
 	 * @param type   类型 0-己方 1-敌方
 	 */
 	public void drawTank(int x, int y, Graphics g, int direct, int type) {
@@ -161,19 +175,22 @@ public class MyPanel extends JPanel implements KeyListener, Runnable {
 
 	/**
 	 * 
-	 * @param s         我方子弹
-	 * @param enemyTank 敌方坦克
+	 * @param s    子弹
+	 * @param tank 敌方坦克
 	 * @describe 当子弹打到坦克身上（即坐标系范围）时候，坦克爆照
 	 */
-	public void hitTank(Shot s, EnemyTank enemyTank) {
+	public void hitTank(Shot s, Tank enemyTank) {
 		switch (enemyTank.getDirect()) {
 		case 0:
 		case 2:
 			if (s.x > enemyTank.getX() && s.x < enemyTank.getX() + 40 && s.y > enemyTank.getY()
 					&& s.y < enemyTank.getY() + 60) {
 				s.isLive = false;
-				enemyTank.isLive = false;
+				enemyTank.setLive(false);
 				enemyTanks.remove(enemyTank);
+				if (enemyTank instanceof EnemyTank) {
+					Recorder.addAllEnemyTankNum();
+				}
 				Bomb bomb = new Bomb(enemyTank.getX(), enemyTank.getY());
 				bombs.add(bomb);
 			}
@@ -183,10 +200,47 @@ public class MyPanel extends JPanel implements KeyListener, Runnable {
 			if (s.x > enemyTank.getX() && s.x < enemyTank.getX() + 60 && s.y > enemyTank.getY()
 					&& s.y < enemyTank.getY() + 40) {
 				s.isLive = false;
-				enemyTank.isLive = false;
+				enemyTank.setLive(false);
 				enemyTanks.remove(enemyTank);
 				Bomb bomb = new Bomb(enemyTank.getX(), enemyTank.getY());
 				bombs.add(bomb);
+			}
+		}
+	}
+
+	/**
+	 * 判断是否我方所有子弹中其中一颗击中了敌人坦克
+	 */
+	public void hitEnemy() {
+		for (int i = 0; i < hero.shots.size(); i++) {
+			Shot shot = hero.shots.get(i);
+			if (shot != null && shot.isLive) {
+				// 遍历敌人所有坦克
+				for (int j = 0; j < enemyTanks.size(); j++) {
+					EnemyTank enemyTank = enemyTanks.get(j);
+					hitTank(hero.shot, enemyTank);
+				}
+			}
+		}
+	}
+
+	/**
+	 * 判断是否我方坦克是否被子弹击中
+	 */
+	public void hitHero() {
+		if (enemyTanks.size() > 0) {
+			// 遍历敌人所有坦克
+			for (int j = 0; j < enemyTanks.size(); j++) {
+				EnemyTank enemyTank = enemyTanks.get(j);
+				Vector<Shot> shots = enemyTank.shots;
+				if (shots.size() > 0) {
+					for (int i = 0; i < shots.size(); i++) {
+						Shot shot = shots.get(i);
+						if (hero.isLive() && shot.isLive) {
+							hitTank(shot, hero);
+						}
+					}
+				}
 			}
 		}
 	}
@@ -249,17 +303,9 @@ public class MyPanel extends JPanel implements KeyListener, Runnable {
 				e.printStackTrace();
 			}
 
-			// 判断是否我方所有子弹中其中一颗击中了敌人坦克
-			for (int i = 0; i < hero.shots.size(); i++) {
-				Shot shot = hero.shots.get(i);
-				if (shot != null && shot.isLive) {
-					// 遍历敌人所有坦克
-					for (int j = 0; j < enemyTanks.size(); j++) {
-						EnemyTank enemyTank = enemyTanks.get(j);
-						hitTank(hero.shot, enemyTank);
-					}
-				}
-			}
+			hitEnemy();
+
+			hitHero();
 
 			this.repaint();
 

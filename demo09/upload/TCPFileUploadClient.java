@@ -3,6 +3,7 @@ package demo09.upload;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.FileInputStream;
+import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.Socket;
 
@@ -21,8 +22,11 @@ public class TCPFileUploadClient {
 		bis.close();
 		// 写完结束标记
 		socket.shutdownOutput();
-		
-		
+
+		InputStream inputStream = socket.getInputStream();
+		String s = StreamUtils.streamToString(inputStream);
+		System.out.println(s);
+		inputStream.close();
 
 		bos.close();
 		socket.close();
